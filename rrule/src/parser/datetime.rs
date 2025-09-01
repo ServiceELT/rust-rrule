@@ -71,14 +71,7 @@ pub(crate) fn datestring_to_date(
                     property: property.into(),
                 }),
                 LocalResult::Single(date) => Ok(date),
-                LocalResult::Ambiguous(date1, date2) => {
-                    Err(ParseError::DateTimeInLocalTimezoneIsAmbiguous {
-                        value: dt.into(),
-                        property: property.into(),
-                        date1: date1.to_rfc3339(),
-                        date2: date2.to_rfc3339(),
-                    })
-                }
+                LocalResult::Ambiguous(date1, _) => Ok(date1)
             }?
         } else {
             // Use current system timezone
@@ -251,5 +244,11 @@ mod tests {
             let res = datestring_to_date(datetime_str, timezone, "DTSTART");
             assert!(res.is_err());
         }
+    }
+
+    #[test]
+    fn handles_ambiguous_datetime() {
+        let res = datestring_to_date("20251026T010000", Some(Tz::Europe__London), "DTSTART");
+        assert_eq!(res.unwrap(), Tz::UTC.with_ymd_and_hms(2025, 10, 26, 1, 0, 0).unwrap());
     }
 }

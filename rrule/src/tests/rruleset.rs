@@ -1,5 +1,7 @@
+use std::str::FromStr;
+use chrono::TimeZone;
 use crate::tests::common::{check_occurrences, test_recurring_rrule_set, ymd_hms};
-use crate::{Frequency, NWeekday, RRule, RRuleSet, Weekday};
+use crate::{Frequency, NWeekday, RRule, RRuleSet, Tz, Weekday};
 
 #[test]
 #[cfg(feature = "exrule")]
@@ -657,4 +659,18 @@ fn yearly_with_interval_2() {
         set,
         &[ymd_hms(1960, 1, 1, 9, 0, 0), ymd_hms(1962, 1, 1, 9, 0, 0)],
     );
+}
+
+#[test]
+fn respect_utc_timezone_in_exdates_rdates() {
+    let rruleset_str = "DTSTART;TZID=Europe/London:20251026T010000\nRRULE:FREQ=DAILY";
+    let rruleset = RRuleSet::from_str(rruleset_str).unwrap();
+
+    let results = rruleset
+        .after(Tz::Europe__London.with_ymd_and_hms(2025, 10, 25, 0, 0, 0).unwrap())
+        .before(Tz::Europe__London.with_ymd_and_hms(2025, 10, 28, 0, 0, 0).unwrap())
+        .all(100);
+
+    std::println!("results: {:?}", results);
+    assert_eq!(results.dates.len(), 2);
 }
